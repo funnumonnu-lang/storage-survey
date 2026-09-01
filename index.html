@@ -1,0 +1,1464 @@
+var API_URL = "https://script.google.com/macros/s/AKfycbxVp5AJgTyVoX26bunY-JPsrlEW3ZDzB6ZDG1nDSXFJUQCQPDHK5EFa9CqGravi5K_z/exec";
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<style>
+:root{ --head:#F2F2F2; --vol:#D1F1DA; --cut:#D9E7FD; --keep:#FFE1CC;
+  --line:#D8D8D8; --ink:#1a1a1a; --sub:#666; --bad:#B3261E; }
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:"BIZ UDPGothic","BIZ UDP Gothic","Meiryo","Hiragino Sans",sans-serif;
+  font-size:16px;line-height:1.7;color:var(--ink);background:#fff;padding-bottom:env(safe-area-inset-bottom)}
+h1{font-size:1.15rem;margin:0}
+.wrap{max-width:720px;margin:0 auto;padding:0 14px 110px}
+header{background:var(--head);border-bottom:1px solid var(--line);padding:12px 14px;position:sticky;top:0;z-index:20}
+header .inner{max-width:720px;margin:0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+header .meta{font-size:.8rem;color:var(--sub)}
+.card{border:1px solid var(--line);border-radius:8px;margin:14px 0;overflow:hidden}
+.card>.hd{background:var(--head);padding:9px 12px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.card>.bd{padding:12px}
+.q{margin:0 0 16px}
+.q:last-child{margin-bottom:0}
+.q>label.t{display:block;font-weight:700;font-size:.92rem;margin-bottom:6px}
+.q .req{color:var(--bad);font-weight:700;margin-left:.25em}
+select,input[type=text],input[type=password]{width:100%;font:inherit;font-size:1rem;padding:10px;
+  border:1px solid #aaa;border-radius:6px;background:#fff;color:inherit}
+select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,#555 50%),linear-gradient(135deg,#555 50%,transparent 50%);
+  background-position:calc(100% - 18px) 52%,calc(100% - 13px) 52%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:36px}
+button{font:inherit;font-size:1rem;padding:11px 16px;border:1px solid #888;border-radius:6px;background:#fff;cursor:pointer;color:inherit}
+button.primary{background:var(--vol);border-color:#8fc7a2;font-weight:700}
+button.ghost{background:#fafafa}
+button:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row>*{flex:1 1 auto}
+.err{color:var(--bad);font-size:.85rem;margin-top:4px;display:none}
+.q.invalid select,.q.invalid input[type=text]{border-color:var(--bad);background:#fff6f5}
+.q.invalid .err{display:block}
+.bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);
+  padding:10px 14px calc(10px + env(safe-area-inset-bottom));z-index:30}
+.bar .inner{max-width:720px;margin:0 auto;display:flex;gap:8px;align-items:center}
+.bar .inner button{flex:1}
+.bar .cnt{font-size:.82rem;color:var(--sub);white-space:nowrap;line-height:1.35}
+.note{font-size:.85rem;color:var(--sub);margin:.4rem 0}
+.mini{font-size:.8rem;color:var(--sub)}
+.pill{display:inline-block;font-size:.75rem;padding:2px 9px;border-radius:999px;background:#eee;color:#444;white-space:nowrap}
+.pill.done{background:var(--vol)} .pill.none{background:#efefef}
+.pill.part{background:var(--keep)} .pill.wait{background:var(--cut)}
+.warn{background:var(--keep);border:1px solid #e0b48c;border-radius:6px;padding:10px 12px;margin:12px 0;font-size:.88rem}
+.info{background:var(--cut);border:1px solid #9dbbe6;border-radius:6px;padding:10px 12px;margin:12px 0;font-size:.88rem}
+.list{list-style:none;margin:0;padding:0}
+.list li{border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin-bottom:8px;
+  display:flex;justify-content:space-between;align-items:center;gap:10px}
+.list li .no{font-weight:700}
+.list li .sub{font-size:.8rem;color:var(--sub)}
+.steps{display:flex;gap:6px;overflow-x:auto;padding:12px 0 4px;-webkit-overflow-scrolling:touch}
+.stepchip{flex:0 0 auto;padding:7px 13px;font-size:.85rem;border-radius:999px;background:#fff;border:1px solid #bbb;color:#555}
+.stepchip.filled{background:var(--vol);border-color:#8fc7a2;color:#1a1a1a}
+.stepchip.waiting{background:var(--cut);border-color:#9dbbe6;color:#1a1a1a}
+.stepchip.back{background:#f4f4f4;border-style:dashed}
+.stepchip[aria-selected=true]{border-color:#2b6cb0;border-width:2px;font-weight:700;color:#1a1a1a}
+.bar-mini{height:6px;border-radius:3px;background:#e6e6e6;overflow:hidden;margin-top:5px;max-width:260px}
+.bar-mini-fill{height:100%;background:#8fc7a2;border-radius:3px;transition:width .18s}
+.prog{margin:14px 0 0} .prog .bar-mini{max-width:none}
+.prog-t{font-size:.85rem;color:var(--sub);font-weight:700}
+.prog-block{margin-bottom:16px} .prog-block:last-child{margin-bottom:0}
+.prog-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:.9rem;margin-bottom:6px}
+.prog-head b{font-size:1rem}
+.segbar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:#e9e9e9}
+.seg{height:100%;transition:width .2s}
+.seg.ok{background:#8fc7a2} .seg.wait{background:#9dbbe6} .seg.part{background:#f0b57e}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;font-size:.8rem;color:var(--sub)}
+.lg{display:inline-flex;align-items:center;gap:5px}
+.sw{width:11px;height:11px;border-radius:3px;display:inline-block}
+.sw.ok{background:#8fc7a2} .sw.wait{background:#9dbbe6}
+.sw.part{background:#f0b57e} .sw.none{background:#e9e9e9}
+.tabs{display:flex;gap:6px;margin:14px 0 0;flex-wrap:wrap}
+.tabs button{flex:0 0 auto;padding:8px 14px;font-size:.9rem}
+.tabs button[aria-selected=true]{background:var(--cut);border-color:#9dbbe6;font-weight:700}
+.opted{width:100%;min-height:130px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:.85rem;line-height:1.5;padding:10px;border:1px solid #aaa;border-radius:6px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:520px){.grid2{grid-template-columns:1fr}}
+.hide{display:none !important}
+.busy{position:fixed;inset:0;background:rgba(255,255,255,.72);display:flex;align-items:center;
+  justify-content:center;z-index:60;font-weight:700;color:#444}
+:focus-visible{outline:3px solid #2b6cb0;outline-offset:1px}
+</style>
+</head>
+<body>
+<header><div class="inner">
+  <h1 id="appTitle">収納量調査</h1>
+  <span class="meta" id="appMeta"></span>
+</div></header>
+<div class="wrap" id="root"></div>
+<div class="bar hide" id="bar"><div class="inner" id="barInner"></div></div>
+<div class="busy hide" id="busy">通信中…</div>
+
+<script>
+"use strict";
+
+function isAdmin(){ return location.search.indexOf("admin") >= 0; }
+
+var PRESENCE_YES = "ある";
+var PRESENCE_NO = "ない";
+var PRESENCE_OTHER = "収納物はあるが、自分の部署以外の物品である";
+var DISPOSAL_50 = "50%程度廃棄もしくは外部倉庫へ移管可能（50%は今後も保管）";
+var DISPOSAL_KEEP = "殆どすべて今後も保管";
+var TIMING_NONE = "使用タイミングは決まっていない";
+var LS_WHO = "storage-survey-who";
+var LS_SID = "storage-survey-submit-id";
+var LS_DEPT = "storage-survey-dept";
+var LS_SEC = "storage-survey-section";
+
+/* =======================================================================
+ *  ここだけ書き換えてください
+ *  Apps Script で「デプロイ > ウェブアプリ」して得た /exec のURLを貼ります。
+ * ======================================================================= */
+var API_URL = "https://script.google.com/macros/s/AKfycbxVp5AJgTyVoX26bunY-JPsrlEW3ZDzB6ZDG1nDSXFJUQCQPDHK5EFa9CqGravi5K_z/exec";
+/* 例: var API_URL = "https://script.google.com/macros/s/AKfycbxVp5AJgTyVoX26bunY-JPsrlEW3ZDzB6ZDG1nDSXFJUQCQPDHK5EFa9CqGravi5K_z/exec"; */
+
+/* ---------- 通信（読み取りはJSONP、書き込みはPOST。プレビュー時はモック） ---------- */
+var PREVIEW = !API_URL;
+var PREVIEW_OK = true;   /* API_URL 未設定でもモックで動かす（動作確認用） */
+var WRITES = ["startSubmission","saveTier","submitAll","reopenSubmission","setAdopt",
+              "adminReopen","importUnits","importDepts","clearCache","adminBuild"];
+var cbSeq = 0;
+var PKEY = (function(){
+  var m = location.search.match(/[?&]p=([^&]*)/);
+  return m ? decodeURIComponent(m[1]) : "";
+})();
+
+function jsonp_(fn, args){
+  return new Promise(function(resolve, reject){
+    var cb = "__ss_cb" + (++cbSeq);
+    var tag = document.createElement("script");
+    var timer = setTimeout(function(){ done(new Error("応答がありませんでした")); }, 40000);
+    function done(err, v){
+      clearTimeout(timer);
+      try { delete window[cb]; } catch(e){ window[cb] = undefined; }
+      if (tag.parentNode) tag.parentNode.removeChild(tag);
+      err ? reject(err) : resolve(v);
+    }
+    window[cb] = function(res){
+      if (res && res.ok) done(null, res.v);
+      else done(new Error((res && res.e) || "エラーが返りました"));
+    };
+    tag.onerror = function(){ done(new Error("サーバに接続できませんでした")); };
+    tag.src = API_URL + (API_URL.indexOf("?") >= 0 ? "&" : "?") +
+      "callback=" + cb + "&fn=" + encodeURIComponent(fn) +
+      "&p=" + encodeURIComponent(PKEY) +
+      "&args=" + encodeURIComponent(JSON.stringify(args));
+    document.head.appendChild(tag);
+  });
+}
+
+/* 書き込みは本文が長くなりうるのでPOST。失敗したらJSONPに落とす */
+async function post_(fn, args){
+  var r = await fetch(API_URL, {
+    method: "POST",
+    /* text/plain にしておくとプリフライトが飛ばない */
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ fn: fn, args: args, p: PKEY }),
+    redirect: "follow"
+  });
+  var res = await r.json();
+  if (res && res.ok) return res.v;
+  throw new Error((res && res.e) || "エラーが返りました");
+}
+
+function call(fn){
+  var args = Array.prototype.slice.call(arguments, 1);
+  if (PREVIEW){
+    return new Promise(function(resolve, reject){
+      MOCK[fn] ? resolve(MOCK[fn].apply(null, args)) : reject(new Error(fn));
+    });
+  }
+  if (WRITES.indexOf(fn) >= 0){
+    return post_(fn, args).catch(function(e){
+      /* CORSやネットワークで落ちた場合の保険 */
+      if (e instanceof TypeError) return jsonp_(fn, args);
+      throw e;
+    });
+  }
+  return jsonp_(fn, args);
+}
+
+function busy(on){ document.getElementById("busy").classList.toggle("hide", !on); }
+async function guard(p){
+  busy(true);
+  try { return await p; }
+  catch (e){ alert("通信に失敗しました。電波の届く場所でもう一度お試しください。\n\n" + (e && e.message ? e.message : e)); throw e; }
+  finally { busy(false); }
+}
+
+/* ---------- DOM ---------- */
+function $(s){ return document.querySelector(s); }
+function el(tag, attrs, kids){
+  var e = document.createElement(tag);
+  if (attrs) for (var k in attrs){
+    if (k === "class") e.className = attrs[k];
+    else if (k === "html") e.innerHTML = attrs[k];
+    else if (k === "text") e.textContent = attrs[k];
+    else if (k.slice(0,2) === "on") e.addEventListener(k.slice(2), attrs[k]);
+    else if (attrs[k] != null) e.setAttribute(k, attrs[k]);
+  }
+  (kids || []).forEach(function(c){ if (c) e.appendChild(c); });
+  return e;
+}
+function clear(e){ while (e.firstChild) e.removeChild(e.firstChild); }
+function card(title, kids){
+  return el("div", { class:"card" }, [
+    el("div", { class:"hd" }, [ el("span", { text:title }) ]),
+    el("div", { class:"bd" }, kids)
+  ]);
+}
+function field(label, control, help){
+  return el("div", { class:"q" }, [
+    el("label", { class:"t", text:label }), control,
+    help ? el("div", { class:"note", text:help }) : null
+  ]);
+}
+function q(label, control, required, help){
+  var w = el("div", { class:"q" }, [
+    el("label", { class:"t" }, [ document.createTextNode(label),
+      required ? el("span", { class:"req", text:"必須" }) : null ]),
+    control,
+    help ? el("div", { class:"note", text:help }) : null,
+    el("div", { class:"err", text:"入力してください" })
+  ]);
+  w._control = control; w._required = !!required;
+  return w;
+}
+function show(n, on){ n.classList.toggle("hide", !on); if (!on) n.classList.remove("invalid"); }
+function clearInvalid(n){ n.classList.remove("invalid"); }
+function validateField(n){
+  if (!n._required || n.classList.contains("hide")){ clearInvalid(n); return true; }
+  var ok = String(n._control.value || "").trim() !== "";
+  n.classList.toggle("invalid", !ok);
+  return ok;
+}
+function showBar(kids){
+  var inner = $("#barInner"); clear(inner);
+  kids.forEach(function(k){ inner.appendChild(k); });
+  $("#bar").classList.remove("hide");
+}
+function lsGet(k){ try { return localStorage.getItem(k) || ""; } catch(e){ return ""; } }
+function lsSet(k,v){ try { localStorage.setItem(k, v); } catch(e){} }
+
+/* ---------- 状態 ---------- */
+var BOOT = null, MY = {}, OTHERS = {}, currentUnit = null;
+
+function unitByNo(no){
+  for (var i = 0; i < BOOT.units.length; i++) if (BOOT.units[i].no === no) return BOOT.units[i];
+  return null;
+}
+/** 自分の回答から進捗を計算する（サーバに聞かない） */
+function progOf(u){
+  var t = MY[u.no];
+  if (!t) return null;
+  var filled = 0, pending = false;
+  for (var n = 1; n <= u.tiers; n++){
+    if (!tierAnswered(t[n])) continue;
+    filled++;
+    if (t[n].presence === PRESENCE_OTHER) pending = true;
+  }
+  if (!filled) return null;
+  return { filled: filled, done: filled === u.tiers, pending: pending };
+}
+function statusOf(u){
+  var p = progOf(u);
+  if (!p || !p.filled) return ["none", "未登録", "登録する"];
+  if (!p.done) return ["part", p.filled + "/" + u.tiers + "段", "続きから"];
+  if (p.pending) return ["wait", "他部署待ち", "見直す"];
+  return ["done", "登録済み", "見直す"];
+}
+function locked(){ return BOOT.me && BOOT.me.state === "提出済み"; }
+
+/* ================= 所属の登録 ================= */
+function renderStart(){
+  var root = $("#root"); clear(root);
+  $("#appTitle").textContent = BOOT.project;
+  $("#appMeta").textContent = "";
+  $("#bar").classList.add("hide");
+
+  var deptSel = el("select");
+  deptSel.appendChild(el("option", { value:"", text:"選択してください" }));
+  BOOT.depts.forEach(function(x){ deptSel.appendChild(el("option", { value:x.name, text:x.name })); });
+  var secSel = el("select"); secSel.disabled = true;
+  function fillSections(){
+    clear(secSel);
+    secSel.appendChild(el("option", { value:"", text:"選択してください" }));
+    var dd = null;
+    BOOT.depts.forEach(function(x){ if (x.name === deptSel.value) dd = x; });
+    (dd ? dd.sections : []).forEach(function(n){ secSel.appendChild(el("option", { value:n, text:n })); });
+    secSel.disabled = !dd;
+  }
+  deptSel.addEventListener("change", fillSections);
+  var prevD = lsGet(LS_DEPT), prevS = lsGet(LS_SEC);
+  if (prevD){ deptSel.value = prevD; fillSections(); if (prevS) secSel.value = prevS; }
+
+  var who = el("input", { type:"text", value: lsGet(LS_WHO), placeholder:"例）山田（任意）" });
+  var msg = el("div", { class:"note" });
+
+  root.appendChild(card("あなたの所属", [
+    el("div", { class:"note", text:
+      "ここで選んだ所属を、各段の「使用している部門・課」の初期値として使います。" +
+      "違う部署の収納を登録するときだけ、段ごとに選び直してください。" }),
+    q("部門", deptSel, true),
+    q("課", secSel, true),
+    field("お名前（任意）", who, "同じ所属の方が複数いる場合の目印になります。空欄でも構いません。"),
+    el("div", { class:"row", style:"margin-top:10px" }, [
+      el("button", { class:"primary", text:"回答をはじめる", onclick: async function(){
+        if (!validateField(root.querySelectorAll(".q")[0]) | !validateField(root.querySelectorAll(".q")[1])){
+          msg.textContent = "部門と課を選んでください。"; return;
+        }
+        lsSet(LS_DEPT, deptSel.value); lsSet(LS_SEC, secSel.value); lsSet(LS_WHO, who.value.trim());
+        try {
+          var id = await guard(call("startSubmission", deptSel.value, secSel.value, who.value.trim()));
+          lsSet(LS_SID, id);
+          await reload(id);
+        } catch(e){ msg.textContent = "開始できませんでした。"; }
+      }})
+    ]),
+    msg
+  ]));
+  root.appendChild(el("div", { class:"info", text:
+    "同じ端末で続きから入力する場合、この画面は出ません。別の端末に変えたときは入れ直してください（新しい回答として記録されます）。" }));
+}
+
+async function reload(sid){
+  BOOT = await guard(call("getBootstrap", sid || lsGet(LS_SID)));
+  MY = BOOT.myAnswers || {};
+  OTHERS = BOOT.others || {};
+  if (!BOOT.me) { lsSet(LS_SID, ""); renderStart(); return; }
+  renderList();
+}
+
+/* ================= 一覧 ================= */
+function renderList(){
+  var root = $("#root"); clear(root);
+  $("#appTitle").textContent = BOOT.project;
+  $("#appMeta").textContent = BOOT.me.label + (locked() ? "｜提出済み" : "");
+  if (window.scrollTo) window.scrollTo(0, 0);
+
+  if (BOOT.noTiers && BOOT.noTiers.length){
+    root.appendChild(el("div", { class:"warn", text:
+      "段数が読み取れない什器が " + BOOT.noTiers.length + " 件あるため、一覧に出していません（" +
+      BOOT.noTiers.slice(0, 5).join("、") + (BOOT.noTiers.length > 5 ? " ほか" : "") + "）。" }));
+  }
+
+  var nU = BOOT.units.length, done = 0, wait = 0, part = 0;
+  var tiersAll = 0, tiersDone = 0, tiersWait = 0, tiersPart = 0;
+  BOOT.units.forEach(function(u){
+    var p = progOf(u) || { filled:0 };
+    tiersAll += u.tiers; tiersDone += p.filled;
+    if (!p.filled) return;
+    if (!p.done) { part++; tiersPart += p.filled; }
+    else if (p.pending) wait++;
+    else done++;
+  });
+
+  function segBar(segs){
+    return el("div", { class:"segbar" }, segs.map(function(sg){
+      return sg[0] > 0 ? el("div", { class:"seg " + sg[1], style:"width:" + (Math.round(sg[0]*10)/10) + "%" }) : null;
+    }));
+  }
+
+  if (locked()){
+    root.appendChild(el("div", { class:"info", html:
+      "<b>提出しました。</b>ありがとうございました。内容を直す必要が出たら「提出を取り消す」を押してください。" }));
+  }
+
+  root.appendChild(card("あなたの登録状況", [
+    el("div", { class:"prog-block" }, [
+      el("div", { class:"prog-head" }, [ el("span", { text:"登録した収納" }),
+        el("b", { text: (done + wait) + " 件（うち他部署待ち " + wait + " 件）" }) ]),
+      segBar([[ nU?done/nU*100:0, "ok" ], [ nU?wait/nU*100:0, "wait" ], [ nU?part/nU*100:0, "part" ]]),
+      el("div", { class:"legend" }, [
+        el("span", { class:"lg" }, [ el("i", { class:"sw ok" }), document.createTextNode("登録済み " + done + "件") ]),
+        el("span", { class:"lg" }, [ el("i", { class:"sw wait" }), document.createTextNode("他部署待ち " + wait + "件") ]),
+        el("span", { class:"lg" }, [ el("i", { class:"sw part" }), document.createTextNode("入力途中 " + part + "件") ])
+      ])
+    ]),
+    el("div", { class:"prog-block" }, [
+      el("div", { class:"prog-head" }, [ el("span", { text:"登録した段" }),
+        el("b", { text: tiersDone + " 段" }) ])
+    ]),
+    el("div", { class:"note", text:
+      "全体で" + nU + "件の収納があります。担当ぶんだけ登録してください。全部に答える必要はありません。" })
+  ]));
+
+  /* 収納番号セレクタ */
+  var alphas = [], byAlpha = {};
+  BOOT.units.forEach(function(u){
+    if (!byAlpha[u.alpha]){ byAlpha[u.alpha] = []; alphas.push(u.alpha); }
+    byAlpha[u.alpha].push(u);
+  });
+  alphas.sort();
+
+  var alphaSel = el("select");
+  alphaSel.appendChild(el("option", { value:"", text:"選択してください" }));
+  alphas.forEach(function(a){ alphaSel.appendChild(el("option", { value:a, text:a })); });
+  var numSel = el("select");
+  var goBtn = el("button", { class:"primary", text:"この収納を開く", disabled:"disabled" });
+  var pickInfo = el("div", { class:"note" });
+  var dupNote = el("div", { class:"warn hide" });
+
+  function fillNums(){
+    clear(numSel);
+    numSel.appendChild(el("option", { value:"", text:"選択してください" }));
+    (byAlpha[alphaSel.value] || []).forEach(function(u){
+      var st = statusOf(u);
+      var tag = st[0] === "none" ? (OTHERS[u.no] ? "（他の人が登録済み）" : "") : "（" + st[1] + "）";
+      numSel.appendChild(el("option", { value:u.no, text: u.num + tag }));
+    });
+    numSel.disabled = !alphaSel.value;
+    sync();
+  }
+  function sync(){
+    var u = numSel.value ? unitByNo(numSel.value) : null;
+    goBtn.disabled = !u || locked();
+    pickInfo.textContent = u ? u.no + "／" + (u.spec || "仕様なし") + "／上から" + u.tiers + "段" +
+      (progOf(u) ? "／" + statusOf(u)[1] : "") : "";
+    var o = u && OTHERS[u.no];
+    dupNote.classList.toggle("hide", !o);
+    if (o) dupNote.textContent = "この収納は " + o.join("、") + " が既に登録しています。担当が重なっていないか確認してください（登録内容までは見られません）。";
+  }
+  if (alphas.length === 1) alphaSel.value = alphas[0];
+  fillNums();
+  alphaSel.addEventListener("change", fillNums);
+  numSel.addEventListener("change", sync);
+  goBtn.addEventListener("click", function(){ if (numSel.value) openUnit(numSel.value); });
+
+  root.appendChild(card("収納番号", [
+    el("div", { class:"note", text:"什器に貼られたラベルの収納番号を選んでください。" }),
+    el("div", { class:"grid2" }, [
+      field("収納番号の頭にあるアルファベット", alphaSel),
+      field("収納番号", numSel)
+    ]),
+    pickInfo, dupNote,
+    el("div", { class:"row" }, [ goBtn ])
+  ]));
+
+  /* 自分が登録したもの */
+  var mine = BOOT.units.filter(function(u){ return progOf(u); });
+  var ul = el("ul", { class:"list" });
+  mine.forEach(function(u){
+    var st = statusOf(u), p = progOf(u);
+    ul.appendChild(el("li", {}, [
+      el("div", {}, [
+        el("div", { class:"no", text:u.no }),
+        el("div", { class:"sub", text:(u.spec || "") + "（" + u.tiers + "段）" }),
+        !p.done ? el("div", { class:"bar-mini" }, [
+          el("div", { class:"bar-mini-fill", style:"width:" + Math.round(p.filled/u.tiers*100) + "%" })
+        ]) : null
+      ]),
+      el("div", { class:"row" }, [
+        el("span", { class:"pill " + st[0], text:st[1] }),
+        el("button", { text: locked() ? "見る" : st[2], onclick:function(){ openUnit(u.no); } })
+      ])
+    ]));
+  });
+  var otherNos = BOOT.units.filter(function(u){ return OTHERS[u.no]; });
+  if (otherNos.length){
+    var oul = el("ul", { class:"list" });
+    otherNos.forEach(function(u){
+      oul.appendChild(el("li", {}, [
+        el("div", {}, [
+          el("div", { class:"no", text:u.no }),
+          el("div", { class:"sub", text: OTHERS[u.no].join("、") })
+        ]),
+        el("span", { class:"pill wait", text: progOf(u) ? "自分も登録" : "登録済み" })
+      ]));
+    });
+    root.appendChild(card("他の人が登録した収納（" + otherNos.length + "件）", [
+      el("div", { class:"note", text:
+        "重ねて登録しても構いませんが、担当が重なっていないか確認してください。内容は見られません。" }),
+      oul
+    ]));
+  }
+
+  root.appendChild(card("あなたが登録した収納", [
+    mine.length ? ul : el("div", { class:"note", text:"まだありません。" })
+  ]));
+
+  /* 提出 */
+  var submitMsg = el("div", { class:"note" });
+  if (locked()){
+    root.appendChild(card("提出", [
+      el("div", { class:"note", text:"提出済みです。内容を直す場合は取り消してから編集し、もう一度提出してください。" }),
+      el("div", { class:"row" }, [
+        el("button", { class:"ghost", text:"提出を取り消す", onclick: async function(){
+          if (!confirm("提出を取り消して編集できる状態に戻します。よろしいですか？")) return;
+          await guard(call("reopenSubmission", BOOT.me.id));
+          await reload();
+        }})
+      ])
+    ]));
+  } else {
+    root.appendChild(card("提出", [
+      el("div", { class:"note", text:
+        "担当ぶんの登録が終わったら提出してください。入力途中の収納が残っていると提出できません。" }),
+      el("div", { class:"row" }, [
+        el("button", { class:"primary", text:"提出する", onclick: async function(){
+          var r = await guard(call("submitAll", BOOT.me.id));
+          if (r.ok){ await reload(); return; }
+          if (r.empty){ submitMsg.textContent = "まだ1件も登録されていません。"; return; }
+          submitMsg.textContent = "入力途中の収納が残っています：" + r.partial.join("、");
+        }})
+      ]),
+      submitMsg
+    ]));
+  }
+
+  showBar([
+    el("span", { class:"cnt", text: locked() ? "提出済み" : "登録 " + (done + wait) + " 件" }),
+    el("button", { class:"ghost", text:"最新の状況に更新", onclick: function(){ reload(); } })
+  ]);
+}
+
+/* ================= 回答フォーム ================= */
+function openUnit(no){
+  var unit = unitByNo(String(no).toUpperCase());
+  if (!unit) return;
+  var t = MY[unit.no] || {};
+  var saved = [];
+  for (var n = 1; n <= 7; n++) saved.push(t[n] || null);
+  currentUnit = unit;
+  renderForm(unit, saved);
+}
+function backToList(){ currentUnit = null; renderList(); }
+
+function blankTier(){
+  return { dept:"", section:"", presence:"", item:"", itemOther:"", disposal:"",
+           timing:"", reason:"", timing50:"", reason50:"" };
+}
+function tierAnswered(t){
+  if (!t || !t.presence) return false;
+  if (t.presence === PRESENCE_OTHER) return true;
+  return !!(t.dept && t.section);
+}
+
+function renderForm(unit, saved){
+  var root = $("#root"); clear(root);
+  if (window.scrollTo) window.scrollTo(0, 0);
+  $("#appMeta").textContent = unit.no + "（" + (unit.spec || "") + "・" + unit.tiers + "段）";
+
+  var tiers = [];
+  for (var i = 0; i < unit.tiers; i++){
+    var s = saved && saved[i];
+    var t = blankTier();
+    if (s){
+      for (var k in t) if (s[k] != null) t[k] = s[k];
+      /* 「その他」で保存された品目を復元 */
+      if (t.item && BOOT.options.items.indexOf(t.item) < 0){ t.itemOther = t.item; t.item = "__other__"; }
+    }
+    tiers.push(t);
+  }
+
+  var progText = el("div", { class:"prog-t" });
+  var progFill = el("div", { class:"bar-mini-fill" });
+  root.appendChild(el("div", { class:"prog" }, [ progText, el("div", { class:"bar-mini" }, [ progFill ]) ]));
+  var stepBar = el("div", { class:"steps" }); root.appendChild(stepBar);
+  var stepHost = el("div"); root.appendChild(stepHost);
+  var msg = el("div", { class:"warn hide" }); root.appendChild(msg);
+
+  function buildTier(idx){
+    var n = idx + 1, t = tiers[idx];
+
+    var deptSel = el("select");
+    deptSel.appendChild(el("option", { value:"", text:"選択してください" }));
+    BOOT.depts.forEach(function(x){
+      deptSel.appendChild(el("option", { value:x.name, text:x.name, selected: t.dept === x.name ? "selected" : null }));
+    });
+    var secSel = el("select");
+    function fillSections(){
+      clear(secSel);
+      secSel.appendChild(el("option", { value:"", text:"選択してください" }));
+      var dd = null;
+      BOOT.depts.forEach(function(x){ if (x.name === deptSel.value) dd = x; });
+      (dd ? dd.sections : []).forEach(function(s){
+        secSel.appendChild(el("option", { value:s, text:s, selected: t.section === s ? "selected" : null }));
+      });
+      secSel.disabled = !dd;
+    }
+    fillSections();
+    var qDept = q(n + "段目を使用している部門", deptSel, true);
+    var qSec  = q(n + "段目を使用している課", secSel, true);
+
+    var presence = el("select");
+    presence.appendChild(el("option", { value:"", text:"選択してください" }));
+    [PRESENCE_YES, PRESENCE_NO, PRESENCE_OTHER].forEach(function(v){
+      presence.appendChild(el("option", { value:v, text:v, selected: t.presence === v ? "selected" : null }));
+    });
+    var qPresence = q("上から" + n + "段目に収納物はありますか？", presence, true);
+
+    var item = el("select");
+    item.appendChild(el("option", { value:"", text:"選択してください" }));
+    BOOT.options.items.forEach(function(v){
+      item.appendChild(el("option", { value:v, text:v, selected: t.item === v ? "selected" : null }));
+    });
+    if (BOOT.allowOther)
+      item.appendChild(el("option", { value:"__other__", text:"その他（自由入力）", selected: t.item === "__other__" ? "selected" : null }));
+    var qItem = q(n + "段目の収納で過半数を占めているものは何ですか？", item, true);
+
+    var itemOther = el("input", { type:"text", value:t.itemOther || "", placeholder:"具体的に入力してください" });
+    var qItemOther = q("その他の内容", itemOther, true);
+
+    var disposal = el("select");
+    disposal.appendChild(el("option", { value:"", text:"選択してください" }));
+    BOOT.options.disposal.forEach(function(v){
+      disposal.appendChild(el("option", { value:v, text:v, selected: t.disposal === v ? "selected" : null }));
+    });
+    var qDisposal = q(n + "段目の収納物に関して、今後、執務環境の見直しを行う場合に、どの程度整理・移動が可能ですか？", disposal, true);
+
+    function pick(list, cur){
+      var s = el("select");
+      s.appendChild(el("option", { value:"", text:"選択してください" }));
+      list.forEach(function(v){ s.appendChild(el("option", { value:v, text:v, selected: cur === v ? "selected" : null })); });
+      return s;
+    }
+    var timing = pick(BOOT.options.timing, t.timing);
+    var qTiming = q(n + "段目の今後使用するタイミングを教えてください。", timing, true);
+    var reason = pick(BOOT.options.reason, t.reason);
+    var qReason = q(n + "段目の保管が必要な理由を教えてください。", reason, true);
+    var timing50 = pick(BOOT.options.timing, t.timing50);
+    var qTiming50 = q("残す50%の物品または書類の、今後使用するタイミングを教えてください。", timing50, true);
+    var reason50 = pick(BOOT.options.reason, t.reason50);
+    var qReason50 = q("残す50%について、保管が必要な理由を教えてください。", reason50, true);
+
+    var otherNote = el("div", { class:"info hide", text:
+      "この段は他部署の物品として記録します。中身は使用している部署の方に回答してもらう必要があるため、この収納は「他部署待ち」として扱われます。" });
+
+    var fields = [qPresence, qDept, qSec, qItem, qItemOther, qDisposal, qTiming, qReason, qTiming50, qReason50];
+    var badge = el("span", { class:"pill" });
+    var node = el("div", { class:"card" }, [
+      el("div", { class:"hd" }, [ el("span", { text:"上から" + n + "段目" }), badge ]),
+      el("div", { class:"bd" }, [ qPresence, otherNote, qDept, qSec, qItem, qItemOther,
+        qDisposal, qTiming, qReason, qTiming50, qReason50 ])
+    ]);
+
+    function sync(){
+      t.presence = presence.value; t.dept = deptSel.value; t.section = secSel.value;
+      t.item = item.value; t.itemOther = itemOther.value; t.disposal = disposal.value;
+      t.timing = timing.value; t.reason = reason.value;
+      t.timing50 = timing50.value; t.reason50 = reason50.value;
+
+      var mine = t.presence && t.presence !== PRESENCE_OTHER;
+      var yes = t.presence === PRESENCE_YES;
+      show(qDept, !!mine); show(qSec, !!mine);
+      show(otherNote, t.presence === PRESENCE_OTHER);
+      if (t.presence === PRESENCE_OTHER){ t.dept = ""; t.section = ""; }
+      show(qItem, yes);
+      show(qItemOther, yes && t.item === "__other__");
+      show(qDisposal, yes);
+      show(qTiming, yes && t.disposal === DISPOSAL_KEEP);
+      show(qReason, yes && t.disposal === DISPOSAL_KEEP && t.timing === TIMING_NONE);
+      show(qTiming50, yes && t.disposal === DISPOSAL_50);
+      show(qReason50, yes && t.disposal === DISPOSAL_50 && t.timing50 === TIMING_NONE);
+
+      badge.textContent = !t.presence ? "未入力"
+        : t.presence === PRESENCE_OTHER ? "他部署"
+        : t.presence === PRESENCE_YES ? "収納物あり" : t.presence;
+      badge.className = "pill " + (t.presence === PRESENCE_YES ? "done"
+        : t.presence === PRESENCE_OTHER ? "wait" : t.presence ? "none" : "");
+      updateProg();
+    }
+    deptSel.addEventListener("change", function(){
+      t.dept = deptSel.value; t.section = ""; fillSections(); sync(); fields.forEach(clearInvalid);
+    });
+    [presence, secSel, item, disposal, timing, reason, timing50, reason50].forEach(function(c){
+      c.addEventListener("change", function(){ sync(); fields.forEach(clearInvalid); });
+    });
+    itemOther.addEventListener("input", function(){ t.itemOther = itemOther.value; clearInvalid(qItemOther); });
+    sync();
+
+    return {
+      node: node,
+      inherit: function(prev){
+        if (!prev || t.presence || t.dept || !prev.dept) return;
+        deptSel.value = prev.dept; fillSections();
+        if (prev.section) secSel.value = prev.section;
+        sync();
+      },
+      validate: function(){
+        var bad = [];
+        fields.forEach(function(f){
+          if (f.classList.contains("hide")){ clearInvalid(f); return; }
+          if (!validateField(f)) bad.push(f);
+        });
+        return bad;
+      }
+    };
+  }
+
+  var nodes = [];
+  for (var j = 0; j < unit.tiers; j++) nodes.push(buildTier(j));
+  nodes[0].inherit(BOOT.me.dept ? { dept: BOOT.me.dept, section: BOOT.me.section }
+                                : (unit.dept ? { dept: unit.dept, section: "" } : null));
+
+  var STEPS = unit.tiers, step = 0;
+  for (var si = 0; si < unit.tiers; si++){
+    if (!tierAnswered(tiers[si])) { step = si; break; }
+    step = Math.min(si + 1, STEPS - 1);
+  }
+
+  function inheritSource(idx){
+    for (var i = idx; i >= 0; i--) if (tiers[i].dept) return tiers[i];
+    if (BOOT.me.dept) return { dept: BOOT.me.dept, section: BOOT.me.section };
+    return unit.dept ? { dept: unit.dept, section: "" } : null;
+  }
+  function filledCount(){
+    var c = 0; tiers.forEach(function(t){ if (tierAnswered(t)) c++; }); return c;
+  }
+  function updateProg(){
+    var fl = filledCount();
+    var pend = tiers.some(function(t){ return t.presence === PRESENCE_OTHER; });
+    progText.textContent = unit.no + "　" + fl + " / " + unit.tiers + "段 入力済み" +
+      (fl === unit.tiers ? (pend ? "（他部署待ちの段があります）" : "（入力完了を押してください）") : "");
+    progFill.style.width = Math.round(fl / unit.tiers * 100) + "%";
+    var chips = stepBar.querySelectorAll(".stepchip");
+    for (var i = 1; i < chips.length; i++){
+      chips[i].classList.toggle("filled", tierAnswered(tiers[i-1]) && tiers[i-1].presence !== PRESENCE_OTHER);
+      chips[i].classList.toggle("waiting", tiers[i-1].presence === PRESENCE_OTHER);
+    }
+  }
+  function validateStep(){
+    var bad = nodes[step].validate();
+    if (bad.length){
+      msg.classList.remove("hide");
+      msg.textContent = "未入力が " + bad.length + " 件あります。赤くなっている項目を入力してください。";
+      if (bad[0].scrollIntoView) bad[0].scrollIntoView({ block:"center", behavior:"smooth" });
+      return false;
+    }
+    msg.classList.add("hide");
+    return true;
+  }
+  async function commit(){
+    var t = tiers[step];
+    var payload = {
+      dept: t.dept, section: t.section, presence: t.presence,
+      item: t.item === "__other__" ? t.itemOther : t.item,
+      disposal: t.disposal, timing: t.timing, reason: t.reason,
+      timing50: t.timing50, reason50: t.reason50
+    };
+    await guard(call("saveTier", BOOT.me.id, unit.no, step + 1, payload));
+    if (!MY[unit.no]) MY[unit.no] = {};
+    MY[unit.no][step + 1] = payload;
+    return true;
+  }
+  function goto(i){
+    step = Math.max(0, Math.min(STEPS - 1, i));
+    if (step > 0) nodes[step].inherit(inheritSource(step - 1));
+    msg.classList.add("hide");
+    drawStep();
+    if (window.scrollTo) window.scrollTo(0, 0);
+  }
+  async function next(){
+    if (!validateStep()) return;
+    await commit();
+    if (step + 1 < STEPS) nodes[step + 1].inherit(inheritSource(step));
+    goto(step + 1);
+  }
+  async function finish(){
+    if (!validateStep()) return;
+    await commit();
+    var left = [];
+    for (var i = 0; i < unit.tiers; i++) if (!tierAnswered(tiers[i])) left.push(i + 1);
+    if (left.length){
+      goto(left[0]);
+      msg.classList.remove("hide");
+      msg.textContent = "ここまでは保存しました。" + left.join("・") + "段目がまだ未入力です。";
+      return;
+    }
+    backToList();
+  }
+
+  function drawStep(){
+    clear(stepBar);
+    stepBar.appendChild(el("button", { class:"stepchip back", text:"← 収納一覧", onclick: backToList }));
+    for (var i = 0; i < STEPS; i++){
+      (function(i){
+        stepBar.appendChild(el("button", { class:"stepchip",
+          "aria-selected": i === step ? "true" : "false",
+          text:(i + 1) + "段目",
+          onclick: function(){ if (i > step && !validateStep()) return; goto(i); } }));
+      })(i);
+    }
+    clear(stepHost);
+    stepHost.appendChild(nodes[step].node);
+
+    var last = step === STEPS - 1;
+    var bar = [ el("button", { class:"ghost", text: step === 0 ? "収納を選び直す" : "戻る",
+      onclick: function(){ step === 0 ? backToList() : goto(step - 1); } }) ];
+    if (locked()){
+      if (!last) bar.push(el("button", { class:"ghost", text:"次の段へ", onclick: function(){ goto(step + 1); } }));
+    } else {
+      if (!last) bar.push(el("button", { class:"primary", text:"保存して次の段へ", onclick: next }));
+      bar.push(el("button", { class: last ? "primary" : "ghost", text:"入力完了", onclick: finish }));
+    }
+    showBar(bar);
+    Array.prototype.forEach.call(stepHost.querySelectorAll("select,input"),
+      function(c){ c.disabled = locked(); });
+    updateProg();
+  }
+  if (step > 0) nodes[step].inherit(inheritSource(step - 1));   /* 続きから開いたとき */
+  drawStep();
+}
+
+/* ================= 案件の管理（?admin=1、案件キーなし） ================= */
+var ADMIN_PASS = "";
+
+function pageBase(){
+  return location.origin + location.pathname;
+}
+
+function renderProjects(){
+  var root = $("#root"); clear(root);
+  $("#appTitle").textContent = "収納量調査 ｜ 案件の管理";
+  $("#appMeta").textContent = "";
+  $("#bar").classList.add("hide");
+
+  var pass = el("input", { type:"password", placeholder:"マスター設定の管理用あいことば", value: ADMIN_PASS });
+  var msg = el("div", { class:"note" });
+  var host = el("div");
+
+  async function load(){
+    ADMIN_PASS = pass.value;
+    msg.textContent = "";
+    clear(host);
+    var r;
+    busy(true);
+    try { r = await call("listProjects", ADMIN_PASS); }
+    catch(e){ msg.textContent = "読み込めませんでした：" + (e && e.message ? e.message : e); return; }
+    finally { busy(false); }
+    draw(r);
+  }
+
+  function draw(r){
+    clear(host);
+    if (r.passIsDefault){
+      host.appendChild(el("div", { class:"warn", html:
+        "マスター設定の<b>管理用あいことばが初期値のまま</b>です。運用前に変更してください。" }));
+    }
+
+    if (!r.projects.length){
+      host.appendChild(el("div", { class:"info", text:
+        "まだ案件がありません。下のフォームから登録してください。" }));
+    }
+
+    r.projects.forEach(function(p){
+      var url = pageBase() + "?p=" + encodeURIComponent(p.key);
+      var urlBox = el("input", { type:"text", value: url, readonly:"readonly" });
+      urlBox.addEventListener("focus", function(){ urlBox.select(); });
+
+      var body = [
+        el("div", { class:"note", text:
+          p.error ? "" : (p.sheetName || "") + "／収納 " + p.units + " 件・部門 " + p.depts +
+            "・回答 " + p.answers + " 行" }),
+        p.error ? el("div", { class:"warn", text: p.error }) : null,
+        field("回答用URL（これを配る）", urlBox),
+        el("div", { class:"row" }, [
+          el("button", { class:"ghost", text:"コピー", onclick: function(){
+            urlBox.select();
+            try { document.execCommand("copy"); } catch(e){}
+            if (navigator.clipboard) navigator.clipboard.writeText(url);
+          }}),
+          el("a", { class:"btnlink", href: url + "&admin=1", target:"_blank",
+            rel:"noopener", text:"この案件の管理画面" }),
+          p.sheetUrl ? el("a", { class:"btnlink", href: p.sheetUrl, target:"_blank",
+            rel:"noopener", text:"スプレッドシート" }) : null
+        ]),
+        el("div", { class:"row", style:"margin-top:10px" }, [
+          el("button", { class:"ghost", text:"シートを初期化", onclick: async function(){
+            if (!confirm("「" + (p.name || p.key) + "」のスプレッドシートに、必要なシートを作ります。\n" +
+                         "既にあるシートはそのまま残します。")) return;
+            try { var res = await guard(call("setupProject", ADMIN_PASS, p.key));
+                  alert(res.name + " を初期化しました。"); load(); }
+            catch(e){ alert("初期化できませんでした：" + (e && e.message ? e.message : e)); }
+          }}),
+          el("button", { class:"ghost", text:"一覧から外す", onclick: async function(){
+            if (!confirm("「" + (p.name || p.key) + "」を一覧から外します。\n" +
+                         "スプレッドシートと回答データは消えません。")) return;
+            await guard(call("removeProject", ADMIN_PASS, p.key));
+            load();
+          }})
+        ])
+      ];
+
+      host.appendChild(el("div", { class:"card" }, [
+        el("div", { class:"hd" }, [
+          el("span", { text: (p.name || "(名称なし)") + "　" + p.key }),
+          el("span", { class: "pill " + (p.error ? "part" : p.ready ? "done" : "none"),
+            text: p.error ? "エラー" : p.ready ? "準備できています" : "未設定" })
+        ]),
+        el("div", { class:"bd" }, body)
+      ]));
+    });
+
+    /* 追加フォーム */
+    var fKey = el("input", { type:"text", placeholder:"例）honsha2026（半角英数字。URLに入ります）" });
+    var fName = el("input", { type:"text", placeholder:"例）〇〇本社 収納量調査" });
+    var fId = el("input", { type:"text", placeholder:"スプレッドシートのID、またはURLを貼り付け" });
+    var fNote = el("input", { type:"text", placeholder:"備考（任意）" });
+    var addMsg = el("div", { class:"note" });
+    host.appendChild(card("案件を追加・更新する", [
+      el("div", { class:"note", text:
+        "案件ごとに新しいスプレッドシートを作り、そのURLをここに貼ってください。" +
+        "同じキーで登録すると内容を上書きします。" }),
+      field("キー", fKey),
+      field("案件名", fName),
+      field("スプレッドシートID / URL", fId),
+      field("備考", fNote),
+      el("div", { class:"row" }, [
+        el("button", { class:"primary", text:"登録する", onclick: async function(){
+          addMsg.textContent = "";
+          try {
+            await guard(call("saveProject", ADMIN_PASS, fKey.value, fName.value, fId.value, fNote.value));
+            var k = fKey.value.trim();
+            await guard(call("setupProject", ADMIN_PASS, k));
+            fKey.value = fName.value = fId.value = fNote.value = "";
+            load();
+          } catch(e){ addMsg.textContent = "登録できませんでした：" + (e && e.message ? e.message : e); }
+        }})
+      ]),
+      addMsg
+    ]));
+  }
+
+  root.appendChild(card("案件の管理", [
+    pass,
+    el("div", { class:"row", style:"margin-top:8px" }, [
+      el("button", { class:"primary", text:"読み込む", onclick: load })
+    ]),
+    msg
+  ]));
+  root.appendChild(host);
+  if (ADMIN_PASS) load();
+}
+
+/* ================= 案件ごとの管理 ================= */
+
+function renderAdmin(){
+  var root = $("#root"); clear(root);
+  $("#appTitle").textContent = (BOOT ? BOOT.project : "収納量調査") + " ｜ 管理";
+  $("#appMeta").textContent = "";
+  $("#bar").classList.add("hide");
+
+  var pass = el("input", { type:"password", placeholder:"設定シートの管理用あいことば", value: ADMIN_PASS });
+  var msg = el("div", { class:"note" });
+  var host = el("div");
+
+  async function load(){
+    ADMIN_PASS = pass.value;
+    drawTabs();
+    msg.textContent = "";
+    clear(host);
+    var r;
+    busy(true);
+    try { r = await call("getReview", ADMIN_PASS); }
+    catch(e){ msg.textContent = "読み込めませんでした：" + (e && e.message ? e.message : e); return; }
+    finally { busy(false); }
+    draw(r);
+  }
+
+  function tbl(head, rows){
+    var t = el("table", { style:"border-collapse:collapse;width:100%;font-size:.85rem" });
+    t.appendChild(el("tr", {}, head.map(function(h){
+      return el("th", { text:h, style:"border:1px solid #D8D8D8;padding:6px 8px;background:#F2F2F2;text-align:left" });
+    })));
+    rows.forEach(function(r){
+      t.appendChild(el("tr", {}, r.map(function(c){
+        var td = el("td", { style:"border:1px solid #D8D8D8;padding:6px 8px;vertical-align:top" });
+        if (c && c.nodeType) td.appendChild(c); else td.textContent = c == null ? "" : String(c);
+        return td;
+      })));
+    });
+    return t;
+  }
+
+  function draw(r){
+    clear(host);
+
+    host.appendChild(card("集計", [
+      el("div", { class:"note", text:
+        "収納 " + r.units + " 件のうち、そろっているのが " + r.ready + " 件。" +
+        "未登録 " + r.missing.length + " 件、入力途中どまり " + r.partialUnits.length + " 件、" +
+        "重複 " + r.duplicates.length + " 件、他部署待ちを含むもの " + r.waiting.length + " 件。" })
+    ]));
+
+    /* 提出状況 */
+    host.appendChild(card("提出状況", [
+      r.submissions.length
+        ? tbl(["回答者", "状態", "登録済み", "入力途中", "提出日時", ""],
+            r.submissions.map(function(s){
+              return [ s.who, s.state, s.done + "件", s.partial + "件", s.submittedAt,
+                s.state === "提出済み"
+                  ? el("button", { class:"ghost", style:"padding:5px 10px;font-size:.8rem",
+                      text:"差し戻す", onclick: async function(){
+                        if (!confirm(s.who + " さんの提出を取り消して、編集できる状態に戻します。")) return;
+                        await guard(call("adminReopen", ADMIN_PASS, s.id));
+                        load();
+                      }})
+                  : "" ];
+            }))
+        : el("div", { class:"note", text:"まだ提出がありません。" })
+    ]));
+
+    /* 重複 */
+    var dupKids = [];
+    if (!r.duplicates.length) dupKids.push(el("div", { class:"note", text:"重複はありません。" }));
+    r.duplicates.forEach(function(d){
+      var sel = el("select");
+      d.entries.forEach(function(e){
+        sel.appendChild(el("option", { value:e.id, text: e.who + "（" + e.at + "）",
+          selected: e.id === d.adopted ? "selected" : null }));
+      });
+      sel.addEventListener("change", async function(){
+        await guard(call("setAdopt", ADMIN_PASS, d.no, sel.value));
+        load();
+      });
+      dupKids.push(el("div", { class:"card" }, [
+        el("div", { class:"hd" }, [
+          el("span", { text: d.no }),
+          el("span", { class: "pill " + (d.identical ? "done" : "part"),
+            text: d.identical ? "内容は一致" : "内容が違う" })
+        ]),
+        el("div", { class:"bd" }, [
+          el("div", { class:"note", text: d.entries.map(function(e){
+            return e.who + "（" + e.state + "・" + e.at + "）"; }).join(" ／ ") }),
+          d.identical ? null : el("div", { class:"warn", text:
+            "回答内容が食い違っています。どちらを採るか確認してください。" }),
+          field("採用する回答", sel)
+        ])
+      ]));
+    });
+    host.appendChild(card("重複（同じ収納を複数の人が登録）", dupKids));
+
+    /* 不足 */
+    host.appendChild(card("不足", [
+      el("div", { class:"note", text:"どの提出にも1件も入っていない収納です。" }),
+      r.missing.length
+        ? tbl(["収納番号", "什器仕様", "段数"],
+            r.missing.map(function(m){ return [m.no, m.spec || "", m.tiers + "段"]; }))
+        : el("div", { class:"note", text:"ありません。" }),
+      el("div", { class:"note", style:"margin-top:14px", text:
+        "登録はされたが、段が最後まで埋まっていない収納です。" }),
+      r.partialUnits.length
+        ? tbl(["収納番号", "段数", "入力した人"],
+            r.partialUnits.map(function(m){ return [m.no, m.tiers + "段", m.who.join("、")]; }))
+        : el("div", { class:"note", text:"ありません。" })
+    ]));
+
+    /* 他部署待ち */
+    host.appendChild(card("他部署待ちの段", [
+      el("div", { class:"note", text:
+        "「自分の部署以外の物品」と回答された段です。その部署の方に回答してもらう必要があります。" }),
+      r.waiting.length
+        ? tbl(["収納番号", "該当する段"],
+            r.waiting.map(function(w){ return [w.no, w.tiers.join("・") + "段目"]; }))
+        : el("div", { class:"note", text:"ありません。" })
+    ]));
+
+    /* ①回答 */
+    var out = el("div", { class:"note" });
+    host.appendChild(card("①回答シートを作る", [
+      el("div", { class:"note", text:
+        "収納ごとに、上で選んだ採用回答を1行にまとめます。段が最後まで埋まっていない収納は含めません。" }),
+      el("div", { class:"row" }, [
+        el("button", { class:"primary", text:"作成する", onclick: async function(){
+          busy(true);
+          try {
+            var res = await call("adminBuild", ADMIN_PASS);
+            out.textContent = res.rows + "件を書き出しました。" +
+              (res.skipped.length ? "／含めなかった収納：" + res.skipped.join("、") : "");
+          } catch(e){ out.textContent = "作成できませんでした：" + (e && e.message ? e.message : e); }
+          finally { busy(false); }
+        }})
+      ]),
+      out,
+      el("div", { class:"note", text:
+        "作成後、スプレッドシートを「ファイル > ダウンロード > Microsoft Excel」で保存し、集計ツールに読ませてください。" })
+    ]));
+  }
+
+  var tabs = el("div", { class:"tabs hide" });
+  var TAB = "review";
+  function drawTabs(){
+    clear(tabs);
+    [["review","突き合わせ"],["setup","設定の確認"]].forEach(function(t){
+      tabs.appendChild(el("button", { text:t[1], "aria-selected": TAB === t[0] ? "true" : "false",
+        onclick: function(){ TAB = t[0]; drawTabs(); TAB === "setup" ? loadSetup() : load(); } }));
+    });
+    tabs.classList.remove("hide");
+  }
+
+  /* ---- 設定の確認 ---- */
+  async function loadSetup(){
+    clear(host);
+    var info;
+    busy(true);
+    try { info = await call("getSetupInfo", ADMIN_PASS); }
+    catch(e){ msg.textContent = "読み込めませんでした：" + (e && e.message ? e.message : e); return; }
+    finally { busy(false); }
+    drawSetup(info);
+  }
+
+  function drawSetup(info){
+    clear(host);
+
+    host.appendChild(el("div", { class:"row" }, [
+      el("a", { class:"btnlink", href: pageBase() + "?admin=1", text:"← 案件の一覧へ" })
+    ]));
+
+    var myUrl = pageBase() + "?p=" + encodeURIComponent(PKEY);
+    var urlBox = el("input", { type:"text", value: myUrl, readonly:"readonly" });
+    urlBox.addEventListener("focus", function(){ urlBox.select(); });
+    host.appendChild(card("この案件の回答用URL", [
+      el("div", { class:"note", text:
+        "このURLを回答者に配ってください。什器に貼るQRの中身も全部これで構いません。" }),
+      urlBox,
+      el("div", { class:"row", style:"margin-top:8px" }, [
+        el("button", { class:"ghost", text:"コピー", onclick: function(){
+          urlBox.select();
+          try { document.execCommand("copy"); } catch(e){}
+          if (navigator.clipboard) navigator.clipboard.writeText(myUrl);
+        }})
+      ]),
+      el("div", { class:"note", text:
+        "管理画面はこのURLに &admin=1 を付けたものです。回答者には配らないでください。" })
+    ]));
+
+    if (info.passIsDefault){
+      host.appendChild(el("div", { class:"warn", html:
+        "設定シートの<b>管理用あいことばが初期値のまま</b>です。運用前に変更してください。" }));
+    }
+
+    /* ②の解釈 */
+    var unitKids = [
+      el("div", { class:"note", text:
+        "収納 " + info.unitCount + " 件／段の合計 " + info.totalTiers + " 段。" +
+        "アプリが什器仕様と段数列をどう読んだかを表示しています。" }),
+      tbl(["段数", "件数", "例"], info.tierBreakdown.map(function(t){
+        return [ t.tiers + "段", t.count + "件", t.sample.join("、") ];
+      }))
+    ];
+    if (info.noTiers.length){
+      unitKids.push(el("div", { class:"warn", text:
+        "段数が読み取れない什器が " + info.noTiers.length + " 件あります。一覧に出ないため回答できません。" +
+        "什器仕様に「6段キャビネット」のように書くか、段数列に数字を入れてください。" }));
+      unitKids.push(tbl(["収納番号", "什器仕様"], info.noTiers.map(function(u){
+        return [ u.no, u.spec || "（空欄）" ]; })));
+    }
+    if (info.duplicated.length){
+      unitKids.push(el("div", { class:"warn", text:
+        "収納番号が重複しています：" + info.duplicated.join("、") }));
+    }
+    host.appendChild(card("②什器サイズ", unitKids));
+
+    /* 部門の解釈 */
+    host.appendChild(card("部門マスタ", [
+      el("div", { class:"note", text: info.depts.length + "部門。結合セルや空欄は直前の部門として畳んでいます。" }),
+      info.depts.length
+        ? tbl(["部門", "出力先", "課"], info.depts.map(function(d){
+            return [ d.name, d.col, d.sections.join("／") || "（課がありません）" ]; }))
+        : el("div", { class:"warn", text:"部門が1件もありません。回答画面が開けません。" })
+    ]));
+
+    /* 選択肢 */
+    host.appendChild(card("選択肢", [
+      tbl(["項目", "内容"], [
+        ["収納物品", info.options.items.join("／") + (info.allowOther ? "／その他（自由入力）" : "")],
+        ["整理・移動", info.options.disposal.join("／")],
+        ["使用タイミング", info.options.timing.join("／")],
+        ["保管理由", info.options.reason.join("／")],
+        ["他の人の登録を知らせる", info.warnOthers ? "はい" : "いいえ"]
+      ])
+    ]));
+
+    /* 貼り付け取り込み */
+    function importer(title, help, fn, done){
+      var ta = el("textarea", { class:"opted", placeholder:"Excelから範囲をコピーして、ここに貼り付け" });
+      var out = el("div", { class:"note" });
+      return card(title, [
+        el("div", { class:"note", text: help }),
+        ta,
+        el("div", { class:"row", style:"margin-top:8px" }, [
+          el("button", { class:"ghost", text:"取り込む", onclick: async function(){
+            if (info.hasAnswers && !confirm("既に回答が入っています。収納番号や課の名前が変わると、既存の回答と噛み合わなくなる可能性があります。続けますか？")) return;
+            busy(true);
+            try { out.textContent = done(await call(fn, ADMIN_PASS, ta.value)); ta.value = ""; loadSetup(); }
+            catch(e){ out.textContent = "取り込めませんでした：" + (e && e.message ? e.message : e); }
+            finally { busy(false); }
+          }})
+        ]),
+        out
+      ]);
+    }
+    host.appendChild(importer("②什器サイズを貼り付けで入れ替える",
+      "準備アプリが出したExcelの、見出しを含む範囲をコピーして貼り付けてください。既存の行はすべて置き換わります。",
+      "importUnits", function(r){
+        return r.imported + "件を取り込みました。" +
+          (r.skipped.length ? "／収納番号の形式が違うためスキップ：" + r.skipped.slice(0,5).join("、") : "");
+      }));
+    host.appendChild(importer("部門マスタを貼り付けで入れ替える",
+      "「部門」「課」の2列をコピーして貼り付けてください。3列目に G / H を入れると出力先を指定できます。",
+      "importDepts", function(r){
+        return r.depts + "部門 / " + r.sections + "課を取り込みました。";
+      }));
+
+    host.appendChild(card("シートを直接編集したとき", [
+      el("div", { class:"note", text:
+        "設定・②什器サイズ・部門マスタは読み込みを10分間キャッシュしています。" +
+        "シートを直接編集した内容をすぐ回答画面に反映したいときは、ここを押してください。" }),
+      el("div", { class:"row" }, [
+        el("button", { class:"ghost", text:"キャッシュを消して読み直す", onclick: async function(){
+          await guard(call("clearCache", ADMIN_PASS));
+          loadSetup();
+        }})
+      ])
+    ]));
+    host.appendChild(el("div", { class:"note", text:
+      "案件名・選択肢・管理用あいことばは、スプレッドシートの「設定」シートで直接編集してください。" }));
+  }
+
+  root.appendChild(card("管理画面", [
+    pass,
+    el("div", { class:"row", style:"margin-top:8px" }, [
+      el("button", { class:"primary", text:"読み込む", onclick: function(){ drawTabs(); TAB === "setup" ? loadSetup() : load(); } })
+    ]),
+    msg
+  ]));
+  root.appendChild(tabs);
+  root.appendChild(host);
+  if (ADMIN_PASS){ drawTabs(); load(); }
+}
+
+/* ================= プレビュー用モック ================= */
+var MOCK = (function(){
+  var units = [
+    { no:"A001", alpha:"A", num:"001", w:900, d:450, h:2100, spec:"6段キャビネット", tiers:6, dept:"総務部" },
+    { no:"A010", alpha:"A", num:"010", w:900, d:450, h:1100, spec:"3段キャビネット", tiers:3, dept:"" },
+    { no:"A022", alpha:"A", num:"022", w:900, d:450, h:400,  spec:"1段キャビネット", tiers:1, dept:"" }
+  ];
+  var subs = {}, order = [], log = {}, adopt = {}, seq = 0;
+  /* 別の人の提出を1件、あらかじめ入れておく */
+  (function(){
+    var id = "S-OTHER";
+    subs[id] = { id:id, dept:"人事部", section:"ES企画課", who:"佐藤",
+      label:"人事部 ES企画課（佐藤）", state:"提出済み", startedAt:"", submittedAt:"2026/09/01 09:00:00" };
+    order.push(id);
+    log[id] = { A022: { 1: { dept:"人事部", section:"ES企画課", presence:"ない",
+      item:"", disposal:"", timing:"", reason:"", timing50:"", reason50:"", at:"2026/09/01 09:00:00" } } };
+  })();
+
+  function answered(x){
+    if (!x || !x.presence) return false;
+    if (x.presence === PRESENCE_OTHER) return true;
+    return !!(x.dept && x.section);
+  }
+  function prog(sid){
+    var o = {}, by = log[sid] || {};
+    units.forEach(function(u){
+      var t = by[u.no] || {}, f = 0, p = false;
+      for (var n = 1; n <= u.tiers; n++){
+        if (!answered(t[n])) continue;
+        f++; if (t[n].presence === PRESENCE_OTHER) p = true;
+      }
+      if (f) o[u.no] = { filled:f, done:f === u.tiers, pending:p };
+    });
+    return o;
+  }
+  function others(myId){
+    var o = {};
+    for (var sid in log){
+      if (sid === myId) continue;
+      for (var no in log[sid]){ if (!o[no]) o[no] = []; 
+        if (o[no].indexOf(subs[sid].label) < 0) o[no].push(subs[sid].label); }
+    }
+    return o;
+  }
+  function holders(){
+    var h = {};
+    order.forEach(function(sid){
+      var pg = prog(sid);
+      units.forEach(function(u){
+        if (!pg[u.no] || !pg[u.no].done) return;
+        if (!h[u.no]) h[u.no] = []; h[u.no].push(sid);
+      });
+    });
+    return h;
+  }
+  return {
+    startSubmission: function(dept, section, who){
+      var id = "S-" + (++seq);
+      subs[id] = { id:id, dept:dept, section:section, who:who,
+        label: dept + " " + section + (who ? "（" + who + "）" : ""),
+        state:"入力中", startedAt:"2026/09/01 10:00:00", submittedAt:"" };
+      order.push(id); log[id] = {};
+      return id;
+    },
+    getBootstrap: function(sid){
+      var me = sid && subs[sid] ? subs[sid] : null;
+      return { project:"（プレビュー）収納量調査", units:units, noTiers:["A099"],
+        depts:[ { name:"人事部", sections:["ES企画課","人事労務課"], col:"G" },
+                { name:"総務部", sections:["総務課","庶務課","ファシリティマネジメント課"], col:"G" } ],
+        options:{ items:["書類（図面など）","個人情報の入った書類","文房具・オフィス備品","防災備品"],
+          disposal:["100%廃棄もしくは外部倉庫へ移管可能", DISPOSAL_50, DISPOSAL_KEEP],
+          timing:["3ヶ月以内に使用する","3～6ヶ月以内に使用する","6ヶ月～1年以上先に使用する", TIMING_NONE],
+          reason:["いつか使用する可能性があるため（急な顧客対応等）","アーカイブ（参考資料）として残したいため"] },
+        allowOther:true, me:me,
+        myAnswers: me ? (log[sid] || {}) : {}, others: me ? others(sid) : {} };
+    },
+    getMyProgress: prog,
+    getMyAnswers: function(sid, no){
+      var t = (log[sid] || {})[no] || {}, out = [];
+      for (var n = 1; n <= 7; n++) out.push(t[n] || null);
+      return out;
+    },
+    saveTier: function(sid, no, n, tier){
+      if (subs[sid].state === "提出済み") throw new Error("提出済みです。");
+      if (!log[sid]) log[sid] = {};
+      if (!log[sid][no]) log[sid][no] = {};
+      var c = {}; for (var k in tier) c[k] = tier[k];
+      c.at = "2026/09/01 10:0" + n + ":00";
+      log[sid][no][n] = c;
+      return true;
+    },
+    submitAll: function(sid){
+      var pg = prog(sid), partial = [], count = 0;
+      units.forEach(function(u){
+        var p = pg[u.no]; if (!p) return;
+        if (p.done) count++; else partial.push(u.no);
+      });
+      if (partial.length) return { ok:false, partial:partial };
+      if (!count) return { ok:false, empty:true };
+      subs[sid].state = "提出済み"; subs[sid].submittedAt = "2026/09/01 10:30:00";
+      return { ok:true, count:count };
+    },
+    reopenSubmission: function(sid){ subs[sid].state = "入力中"; subs[sid].submittedAt = ""; return true; },
+    adminReopen: function(pass, sid){ if (pass !== "change-me") throw new Error("あいことばが違います。");
+      subs[sid].state = "入力中"; return true; },
+    setAdopt: function(pass, no, sid){ if (pass !== "change-me") throw new Error("あいことばが違います。");
+      adopt[no] = sid; return true; },
+    getReview: function(pass){
+      if (pass !== "change-me") throw new Error("あいことばが違います。");
+      var hd = holders();
+      var submissions = order.map(function(sid){
+        var pg = prog(sid), done = 0, part = 0;
+        units.forEach(function(u){ var p = pg[u.no]; if (!p) return; if (p.done) done++; else part++; });
+        return { id:sid, who:subs[sid].label, state:subs[sid].state,
+                 submittedAt:subs[sid].submittedAt, done:done, partial:part };
+      });
+      var duplicates = [], missing = [], partialUnits = [], waiting = [];
+      units.forEach(function(u){
+        var ids = hd[u.no];
+        if (ids && ids.length > 1){
+          var same = JSON.stringify(log[ids[0]][u.no]) === JSON.stringify(log[ids[1]][u.no]);
+          duplicates.push({ no:u.no, identical:same, adopted: adopt[u.no] || ids[0],
+            entries: ids.map(function(sid){ return { id:sid, who:subs[sid].label,
+              state:subs[sid].state, at:"2026/09/01" }; }) });
+        }
+        if (!ids || !ids.length){
+          var who = [];
+          order.forEach(function(sid){ if (log[sid] && log[sid][u.no]) who.push(subs[sid].label); });
+          if (who.length) partialUnits.push({ no:u.no, tiers:u.tiers, who:who });
+          else missing.push({ no:u.no, tiers:u.tiers, spec:u.spec });
+        } else {
+          var sid2 = adopt[u.no] || ids[0], t = log[sid2][u.no], ns = [];
+          for (var n = 1; n <= u.tiers; n++) if (t[n] && t[n].presence === PRESENCE_OTHER) ns.push(n);
+          if (ns.length) waiting.push({ no:u.no, tiers:ns });
+        }
+      });
+      return { units:units.length, submissions:submissions, duplicates:duplicates,
+        missing:missing, partialUnits:partialUnits, waiting:waiting,
+        ready: units.length - missing.length - partialUnits.length };
+    },
+    getSetupInfo: function(pass){
+      if (pass !== "change-me") throw new Error("あいことばが違います。");
+      var by = {};
+      units.forEach(function(u){
+        if (!by[u.tiers]) by[u.tiers] = { tiers:u.tiers, count:0, sample:[] };
+        by[u.tiers].count++;
+        if (by[u.tiers].sample.length < 3) by[u.tiers].sample.push(u.no + "（" + u.spec + "）");
+      });
+      return { unitCount: units.length + 1,
+        tierBreakdown: Object.keys(by).sort(function(a,b){return a-b;}).map(function(k){ return by[k]; }),
+        noTiers: [{ no:"A099", spec:"キャビネット" }], duplicated: [],
+        totalTiers: units.reduce(function(a,u){ return a + u.tiers; }, 0),
+        depts: [ { name:"人事部", col:"G", sections:["ES企画課","人事労務課"] },
+                 { name:"総務部", col:"G", sections:["総務課","庶務課","ファシリティマネジメント課"] } ],
+        options: { items:["書類（図面など）","防災備品"], disposal:["100%廃棄もしくは外部倉庫へ移管可能", DISPOSAL_50, DISPOSAL_KEEP],
+          timing:["3ヶ月以内に使用する", TIMING_NONE], reason:["アーカイブ（参考資料）として残したいため"] },
+        allowOther:true, warnOthers:true, project:"（プレビュー）収納量調査",
+        passIsDefault:true, hasAnswers:true,
+        webUrl:"https://script.google.com/macros/s/AKfycb.../exec" };
+    },
+    importUnits: function(pass, text){
+      if (pass !== "change-me") throw new Error("あいことばが違います。");
+      var n = String(text||"").split("\n").filter(function(l){ return l.trim(); }).length;
+      if (!n) throw new Error("貼り付けが空です。");
+      return { imported: n, skipped: [] };
+    },
+    importDepts: function(pass, text){
+      if (pass !== "change-me") throw new Error("あいことばが違います。");
+      var n = String(text||"").split("\n").filter(function(l){ return l.trim(); }).length;
+      if (!n) throw new Error("貼り付けが空です。");
+      return { depts: 2, sections: n };
+    },
+    clearCache: function(pass){
+      if (pass !== "change-me") throw new Error("あいことばが違います。");
+      return true;
+    },
+    adminBuild: function(pass){
+      if (pass !== "change-me") throw new Error("あいことばが違います。");
+      var hd = holders(), skipped = [];
+      units.forEach(function(u){ if (!hd[u.no]) skipped.push(u.no); });
+      return { rows: units.length - skipped.length, skipped: skipped, url:"" };
+    }
+  };
+})();
+
+/* ================= 起動 ================= */
+(async function(){
+  if (!API_URL && !PREVIEW_OK){
+    $("#root").appendChild(el("div", { class:"warn", html:
+      "このページに <b>API_URL</b> が設定されていません。index.html の先頭にある " +
+      "<code>var API_URL = \"\";</code> に、Apps Script でデプロイした <code>/exec</code> のURLを入れてください。" }));
+    return;
+  }
+
+  /* 案件キーが無い管理画面 → 案件の管理 */
+  if (isAdmin() && !PKEY){ renderProjects(); return; }
+
+  if (!PKEY){
+    $("#appTitle").textContent = "収納量調査";
+    $("#root").appendChild(el("div", { class:"warn", html:
+      "URLに案件が指定されていません。配布された <b>?p=…</b> 付きのURLを開いてください。" }));
+    return;
+  }
+
+  try { BOOT = await guard(call("getBootstrap", lsGet(LS_SID))); }
+  catch(e){ return; }
+  if (!BOOT.units.length){
+    $("#root").appendChild(el("div", { class:"warn", text:
+      "「②什器サイズ」シートに収納番号が入っていません。管理画面から取り込んでください。" }));
+    if (isAdmin()) renderAdmin();
+    return;
+  }
+  if (!BOOT.depts.length){
+    $("#root").appendChild(el("div", { class:"warn", text:
+      "「部門マスタ」シートに部門・課が入っていません。管理画面から取り込んでください。" }));
+    if (isAdmin()) renderAdmin();
+    return;
+  }
+  if (isAdmin()){ renderAdmin(); return; }
+  MY = BOOT.myAnswers || {};
+  OTHERS = BOOT.others || {};
+  if (!BOOT.me){ lsSet(LS_SID, ""); renderStart(); return; }
+  renderList();
+})();
+</script>
+</body>
+</html>

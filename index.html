@@ -1,4 +1,3 @@
-var API_URL = "https://script.google.com/macros/s/AKfycbxVp5AJgTyVoX26bunY-JPsrlEW3ZDzB6ZDG1nDSXFJUQCQPDHK5EFa9CqGravi5K_z/exec";
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -76,6 +75,15 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .tabs{display:flex;gap:6px;margin:14px 0 0;flex-wrap:wrap}
 .tabs button{flex:0 0 auto;padding:8px 14px;font-size:.9rem}
 .tabs button[aria-selected=true]{background:var(--cut);border-color:#9dbbe6;font-weight:700}
+.drop{border:2px dashed #b5b5b5;border-radius:8px;background:#fbfbfb;padding:20px 14px;
+  text-align:center;cursor:pointer;transition:background .12s,border-color .12s}
+.drop:hover{background:#f4f4f4}
+.drop.over{border-color:#5a9c74;background:var(--vol)}
+.drop.loaded{border-style:solid;border-color:#8fc7a2;background:#fff}
+.drop .dz-label{font-size:.92rem;color:#444}
+.drop .dz-hint{font-size:.8rem;color:var(--sub);margin-top:3px}
+.drop .dz-name{font-size:.85rem;font-weight:700;margin-top:6px;word-break:break-all}
+.drop input[type=file]{display:none}
 .opted{width:100%;min-height:130px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
   font-size:.85rem;line-height:1.5;padding:10px;border:1px solid #aaa;border-radius:6px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -182,6 +190,36 @@ function call(fn){
     });
   }
   return jsonp_(fn, args);
+}
+
+/* 管理画面でExcelを読むときだけ SheetJS を読み込む（回答者側では読まない） */
+var xlsxPromise = null;
+function ensureXlsx(){
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  if (xlsxPromise) return xlsxPromise;
+  xlsxPromise = new Promise(function(resolve, reject){
+    var t = document.createElement("script");
+    t.src = "xlsx.mini.min.js";
+    t.onload = function(){ window.XLSX ? resolve(window.XLSX) : reject(new Error("読み込めませんでした")); };
+    t.onerror = function(){ reject(new Error("xlsx.mini.min.js が見つかりません")); };
+    document.head.appendChild(t);
+  });
+  return xlsxPromise;
+}
+
+/** Excel/CSV を、サーバが受け取れるタブ区切りテキストに変換する */
+async function fileToTsv(file){
+  var XL = await ensureXlsx();
+  var buf = await file.arrayBuffer();
+  var wb = XL.read(new Uint8Array(buf), { type:"array" });
+  var name = wb.SheetNames[0];
+  ["②什器サイズ", "部門マスタ"].forEach(function(n){
+    if (wb.SheetNames.indexOf(n) >= 0) name = n;
+  });
+  var aoa = XL.utils.sheet_to_json(wb.Sheets[name], { header:1, defval:"", blankrows:false });
+  return aoa.map(function(row){
+    return row.map(function(c){ return String(c == null ? "" : c).replace(/[\t\r\n]+/g, " "); }).join("\t");
+  }).join("\n");
 }
 
 function busy(on){ document.getElementById("busy").classList.toggle("hide", !on); }
@@ -1181,29 +1219,99 @@ function renderAdmin(){
     function importer(title, help, fn, done){
       var ta = el("textarea", { class:"opted", placeholder:"Excelから範囲をコピーして、ここに貼り付け" });
       var out = el("div", { class:"note" });
+      var picked = el("div", { class:"dz-name" });
+
+      async function send(text){
+        if (!String(text).trim()){ out.textContent = "中身が空です。"; return; }
+        if (info.hasAnswers && !confirm("既に回答が入っています。収納番号や課の名前が変わると、既存の回答と噛み合わなくなる可能性があります。続けますか？")) return;
+        busy(true);
+        try { out.textContent = done(await call(fn, ADMIN_PASS, text)); ta.value = ""; loadSetup(); }
+        catch(e){ out.textContent = "取り込めませんでした：" + (e && e.message ? e.message : e); }
+        finally { busy(false); }
+      }
+
+      var fileIn = el("input", { type:"file", accept:".xlsx,.xlsm,.xls,.csv" });
+      var zone = el("div", { class:"drop", tabindex:"0", role:"button" }, [
+        el("div", { class:"dz-label", text:"Excelファイルをドロップ、またはクリックして選択" }),
+        el("div", { class:"dz-hint", text:"1枚目のシート（②什器サイズ／部門マスタがあればそれ）を読みます" }),
+        picked, fileIn
+      ]);
+
+      async function take(f){
+        if (!f) return;
+        var m = String(f.name).toLowerCase().match(/\.([a-z0-9]+)$/);
+        if (m && ["xlsx","xlsm","xls","csv"].indexOf(m[1]) < 0){
+          picked.textContent = f.name + " は読み込めません（xlsx / xlsm / xls / csv）";
+          zone.classList.remove("loaded");
+          return;
+        }
+        picked.textContent = f.name;
+        zone.classList.add("loaded");
+        busy(true);
+        var tsv;
+        try { tsv = await fileToTsv(f); }
+        catch(e){
+          busy(false);
+          out.textContent = "ファイルを読めませんでした：" + (e && e.message ? e.message : e) +
+            "／下の欄にコピー＆ペーストでも取り込めます。";
+          return;
+        }
+        busy(false);
+        await send(tsv);
+      }
+
+      fileIn.addEventListener("change", function(){ take(fileIn.files && fileIn.files[0]); fileIn.value = ""; });
+      zone.addEventListener("click", function(e){ if (e.target !== fileIn) fileIn.click(); });
+      zone.addEventListener("keydown", function(e){
+        if (e.key === "Enter" || e.key === " "){ e.preventDefault(); fileIn.click(); }
+      });
+      ["dragenter","dragover"].forEach(function(t){
+        zone.addEventListener(t, function(e){
+          e.preventDefault(); e.stopPropagation();
+          if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+          zone.classList.add("over");
+        });
+      });
+      ["dragleave","dragend"].forEach(function(t){
+        zone.addEventListener(t, function(e){
+          e.preventDefault(); e.stopPropagation();
+          if (t === "dragleave" && zone.contains(e.relatedTarget)) return;
+          zone.classList.remove("over");
+        });
+      });
+      zone.addEventListener("drop", function(e){
+        e.preventDefault(); e.stopPropagation();
+        zone.classList.remove("over");
+        var dt = e.dataTransfer; if (!dt) return;
+        var f = dt.files && dt.files.length ? dt.files[0] : null;
+        if (!f && dt.items){
+          for (var i = 0; i < dt.items.length; i++){
+            if (dt.items[i].kind === "file"){ f = dt.items[i].getAsFile(); break; }
+          }
+        }
+        take(f);
+      });
+
       return card(title, [
         el("div", { class:"note", text: help }),
+        zone,
+        el("div", { class:"note", style:"margin-top:12px", text:"またはExcelから範囲をコピーして貼り付け" }),
         ta,
         el("div", { class:"row", style:"margin-top:8px" }, [
-          el("button", { class:"ghost", text:"取り込む", onclick: async function(){
-            if (info.hasAnswers && !confirm("既に回答が入っています。収納番号や課の名前が変わると、既存の回答と噛み合わなくなる可能性があります。続けますか？")) return;
-            busy(true);
-            try { out.textContent = done(await call(fn, ADMIN_PASS, ta.value)); ta.value = ""; loadSetup(); }
-            catch(e){ out.textContent = "取り込めませんでした：" + (e && e.message ? e.message : e); }
-            finally { busy(false); }
-          }})
+          el("button", { class:"ghost", text:"貼り付けた内容を取り込む", onclick: function(){ send(ta.value); } })
         ]),
         out
       ]);
     }
-    host.appendChild(importer("②什器サイズを貼り付けで入れ替える",
-      "準備アプリが出したExcelの、見出しを含む範囲をコピーして貼り付けてください。既存の行はすべて置き換わります。",
+
+    host.appendChild(importer("②什器サイズを取り込む",
+      "準備アプリが出したExcelをそのまま読み込めます。既存の行はすべて置き換わります。",
       "importUnits", function(r){
         return r.imported + "件を取り込みました。" +
           (r.skipped.length ? "／収納番号の形式が違うためスキップ：" + r.skipped.slice(0,5).join("、") : "");
       }));
-    host.appendChild(importer("部門マスタを貼り付けで入れ替える",
-      "「部門」「課」の2列をコピーして貼り付けてください。3列目に G / H を入れると出力先を指定できます。",
+    host.appendChild(importer("部門マスタを取り込む",
+      "「部門」「課」の2列があるExcelを読み込めます。3列目に G / H を入れると出力先を指定できます。",
       "importDepts", function(r){
         return r.depts + "部門 / " + r.sections + "課を取り込みました。";
       }));
@@ -1338,12 +1446,12 @@ var MOCK = (function(){
       return { ok:true, count:count };
     },
     reopenSubmission: function(sid){ subs[sid].state = "入力中"; subs[sid].submittedAt = ""; return true; },
-    adminReopen: function(pass, sid){ if (pass !== "change-me") throw new Error("あいことばが違います。");
+    adminReopen: function(pass, sid){ if (pass !== "STORART2026") throw new Error("あいことばが違います。");
       subs[sid].state = "入力中"; return true; },
-    setAdopt: function(pass, no, sid){ if (pass !== "change-me") throw new Error("あいことばが違います。");
+    setAdopt: function(pass, no, sid){ if (pass !== "STORART2026") throw new Error("あいことばが違います。");
       adopt[no] = sid; return true; },
     getReview: function(pass){
-      if (pass !== "change-me") throw new Error("あいことばが違います。");
+      if (pass !== "STORART2026") throw new Error("あいことばが違います。");
       var hd = holders();
       var submissions = order.map(function(sid){
         var pg = prog(sid), done = 0, part = 0;
@@ -1375,8 +1483,22 @@ var MOCK = (function(){
         missing:missing, partialUnits:partialUnits, waiting:waiting,
         ready: units.length - missing.length - partialUnits.length };
     },
+    listProjects: function(pass){
+      if (pass !== "STORART2026") throw new Error("あいことばが違います。");
+      return { passIsDefault:false, projects:[
+        { key:"demo", name:"（プレビュー）A社 本社", sheetId:"ID-A", note:"",
+          ready:true, units:3, depts:2, answers:1, error:"",
+          sheetName:"A社_収納量調査", sheetUrl:"https://example.com/sheet" },
+        { key:"demo2", name:"（プレビュー）B社 支社", sheetId:"", note:"",
+          ready:false, units:0, depts:0, answers:0, error:"スプレッドシートIDが入っていません。" }
+      ]};
+    },
+    saveProject: function(pass){ if (pass !== "STORART2026") throw new Error("あいことばが違います。"); return true; },
+    removeProject: function(pass){ if (pass !== "STORART2026") throw new Error("あいことばが違います。"); return true; },
+    setupProject: function(pass){ if (pass !== "STORART2026") throw new Error("あいことばが違います。");
+      return { name:"A社_収納量調査", url:"https://example.com/sheet" }; },
     getSetupInfo: function(pass){
-      if (pass !== "change-me") throw new Error("あいことばが違います。");
+      if (pass !== "STORART2026") throw new Error("あいことばが違います。");
       var by = {};
       units.forEach(function(u){
         if (!by[u.tiers]) by[u.tiers] = { tiers:u.tiers, count:0, sample:[] };
@@ -1396,23 +1518,23 @@ var MOCK = (function(){
         webUrl:"https://script.google.com/macros/s/AKfycb.../exec" };
     },
     importUnits: function(pass, text){
-      if (pass !== "change-me") throw new Error("あいことばが違います。");
+      if (pass !== "STORART2026") throw new Error("あいことばが違います。");
       var n = String(text||"").split("\n").filter(function(l){ return l.trim(); }).length;
       if (!n) throw new Error("貼り付けが空です。");
       return { imported: n, skipped: [] };
     },
     importDepts: function(pass, text){
-      if (pass !== "change-me") throw new Error("あいことばが違います。");
+      if (pass !== "STORART2026") throw new Error("あいことばが違います。");
       var n = String(text||"").split("\n").filter(function(l){ return l.trim(); }).length;
       if (!n) throw new Error("貼り付けが空です。");
       return { depts: 2, sections: n };
     },
     clearCache: function(pass){
-      if (pass !== "change-me") throw new Error("あいことばが違います。");
+      if (pass !== "STORART2026") throw new Error("あいことばが違います。");
       return true;
     },
     adminBuild: function(pass){
-      if (pass !== "change-me") throw new Error("あいことばが違います。");
+      if (pass !== "STORART2026") throw new Error("あいことばが違います。");
       var hd = holders(), skipped = [];
       units.forEach(function(u){ if (!hd[u.no]) skipped.push(u.no); });
       return { rows: units.length - skipped.length, skipped: skipped, url:"" };

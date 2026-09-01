@@ -33,6 +33,9 @@ var TIMING_NONE    = '使用タイミングは決まっていない';
 var ST_OPEN = '入力中';
 var ST_DONE = '提出済み';
 
+/* 初期の管理用あいことば。運用前に「マスター設定」シートで変更してください */
+var DEFAULT_PASS_ = 'STORART2026';
+
 var S_PROJ   = '案件';
 var S_MCONF  = 'マスター設定';
 var PROJ_COLS  = ['キー', '案件名', 'スプレッドシートID', '備考'];
@@ -60,7 +63,7 @@ function setup() {
   if (!mc) {
     mc = ss.insertSheet(S_MCONF);
     mc.getRange(1, 1, 1, 2).setValues([MCONF_COLS]).setFontWeight('bold').setBackground('#F2F2F2');
-    mc.getRange(2, 1, 1, 2).setValues([['管理用あいことば', 'change-me']]);
+    mc.getRange(2, 1, 1, 2).setValues([['管理用あいことば', DEFAULT_PASS_]]);
     mc.setColumnWidth(1, 200);
     mc.setColumnWidth(2, 400);
   }
@@ -71,7 +74,7 @@ function setup() {
 
   SpreadsheetApp.getUi().alert(
     'マスターを作成しました。\n\n' +
-    '1. 「マスター設定」の管理用あいことばを変更\n' +
+    '1. 「マスター設定」の管理用あいことばを確認（初期値: ' + DEFAULT_PASS_ + '）\n' +
     '2. 案件ごとに新しいスプレッドシートを作り、そのIDを控える\n' +
     '3. デプロイ > 新しいデプロイ > ウェブアプリ\n' +
     '   実行=自分 ／ アクセス=全員\n' +
@@ -681,7 +684,7 @@ function masterPassIsDefault_() {
   masterRows_(S_MCONF).forEach(function(r){
     if (String(r[0]).trim() === '管理用あいことば') v = String(r[1]);
   });
-  return v === 'change-me';
+  return v === 'change-me' || !v;
 }
 
 /** 案件一覧（管理画面用。準備状況も返す） */
@@ -787,6 +790,24 @@ function sameTier_(a, b) {
   return true;
 }
 
+/** 段1件を画面表示用にまとめる */
+function tierView_(x) {
+  if (!x || !x.presence) return null;
+  return {
+    presence: x.presence,
+    dept: x.dept, section: x.section,
+    item: x.item, disposal: x.disposal,
+    timing: x.timing, reason: x.reason,
+    timing50: x.timing50, reason50: x.reason50
+  };
+}
+
+function tiersView_(byTier, n) {
+  var out = [];
+  for (var i = 1; i <= n; i++) out.push(tierView_((byTier || {})[i]));
+  return out;
+}
+
 function lastAt_(byTier) {
   var at = '';
   for (var n in byTier) if (byTier[n].at > at) at = byTier[n].at;
@@ -839,11 +860,22 @@ function getReview(pass) {
         if (!sameTier_(base[n], lb[ids[i]][u.no][n])) { identical = false; break; }
       }
     }
+    /* どの段が食い違っているか */
+    var diff = [];
+    for (var n = 1; n <= u.tiers; n++) {
+      for (var j = 1; j < ids.length; j++) {
+        if (!sameTier_(base[n], lb[ids[j]][u.no][n])) { diff.push(n); break; }
+      }
+    }
+
     duplicates.push({
-      no: u.no, identical: identical,
+      no: u.no, tiers: u.tiers, spec: u.spec,
+      identical: identical, diff: diff,
       adopted: (ad[u.no] && ids.indexOf(ad[u.no]) >= 0) ? ad[u.no] : ids[0],
       entries: ids.map(function(sid){
-        return { id: sid, who: sm.map[sid].label, state: sm.map[sid].state, at: lastAt_(lb[sid][u.no]) };
+        return { id: sid, who: sm.map[sid].label, state: sm.map[sid].state,
+                 at: lastAt_(lb[sid][u.no]),
+                 tiers: tiersView_(lb[sid][u.no], u.tiers) };
       })
     });
   });
@@ -855,7 +887,19 @@ function getReview(pass) {
     sm.order.forEach(function(sid){
       if (lb[sid] && lb[sid][u.no]) who.push(sm.map[sid].label);
     });
-    if (who.length) partialUnits.push({ no: u.no, tiers: u.tiers, who: who });
+    if (who.length) {
+      var ents = [];
+      sm.order.forEach(function(sid){
+        if (!lb[sid] || !lb[sid][u.no]) return;
+        var filled = [], miss = [];
+        for (var n = 1; n <= u.tiers; n++) {
+          if (answered_(lb[sid][u.no][n])) filled.push(n); else miss.push(n);
+        }
+        ents.push({ id: sid, who: sm.map[sid].label, filled: filled, missing: miss,
+                    tiers: tiersView_(lb[sid][u.no], u.tiers) });
+      });
+      partialUnits.push({ no: u.no, tiers: u.tiers, spec: u.spec, who: who, entries: ents });
+    }
     else missing.push({ no: u.no, tiers: u.tiers, spec: u.spec });
   });
 

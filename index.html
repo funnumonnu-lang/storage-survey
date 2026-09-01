@@ -75,6 +75,13 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .tabs{display:flex;gap:6px;margin:14px 0 0;flex-wrap:wrap}
 .tabs button{flex:0 0 auto;padding:8px 14px;font-size:.9rem}
 .tabs button[aria-selected=true]{background:var(--cut);border-color:#9dbbe6;font-weight:700}
+.cmp{overflow-x:auto;margin:10px 0}
+.cmp table{border-collapse:collapse;width:100%;font-size:.82rem;min-width:420px}
+.cmp th,.cmp td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.cmp th{background:var(--head);white-space:nowrap}
+.cmp td:first-child{white-space:nowrap;background:#fafafa}
+.cmp tr.rowdiff td{background:#FFF6EE}
+.cmp tr.rowdiff td:first-child{background:var(--keep)}
 .drop{border:2px dashed #b5b5b5;border-radius:8px;background:#fbfbfb;padding:20px 14px;
   text-align:center;cursor:pointer;transition:background .12s,border-color .12s}
 .drop:hover{background:#f4f4f4}
@@ -123,8 +130,8 @@ var LS_SEC = "storage-survey-section";
  *  ここだけ書き換えてください
  *  Apps Script で「デプロイ > ウェブアプリ」して得た /exec のURLを貼ります。
  * ======================================================================= */
-var API_URL = "https://script.google.com/macros/s/AKfycbxVp5AJgTyVoX26bunY-JPsrlEW3ZDzB6ZDG1nDSXFJUQCQPDHK5EFa9CqGravi5K_z/exec";
-/* 例: var API_URL = "https://script.google.com/macros/s/AKfycbxVp5AJgTyVoX26bunY-JPsrlEW3ZDzB6ZDG1nDSXFJUQCQPDHK5EFa9CqGravi5K_z/exec"; */
+var API_URL = "https://script.google.com/macros/s/AKfycbzm_kFFkt1zIcVZ4l0Gv34a682a6yD72wwBdS0kcliz59S8ZbaviqXw9Ee45Vu7cdaA/exec";
+/* 例: var API_URL = "https://script.google.com/macros/s/AKfycbzm_kFFkt1zIcVZ4l0Gv34a682a6yD72wwBdS0kcliz59S8ZbaviqXw9Ee45Vu7cdaA/exec"; */
 
 /* ---------- 通信（読み取りはJSONP、書き込みはPOST。プレビュー時はモック） ---------- */
 var PREVIEW = !API_URL;
@@ -1045,6 +1052,28 @@ function renderAdmin(){
     ]));
 
     /* 重複 */
+    /* 段1件を短い行に */
+    function tierLines(t){
+      if (!t) return ["（未入力）"];
+      if (t.presence === PRESENCE_OTHER) return ["他部署の物品"];
+      var L = [t.presence];
+      if (t.dept) L.push(t.dept + " " + t.section);
+      if (t.presence === PRESENCE_YES){
+        if (t.item) L.push(t.item);
+        if (t.disposal) L.push(t.disposal);
+        if (t.timing) L.push(t.timing);
+        if (t.reason) L.push(t.reason);
+        if (t.timing50) L.push("残50%: " + t.timing50);
+        if (t.reason50) L.push("残50%: " + t.reason50);
+      }
+      return L;
+    }
+    function tierCell(t){
+      return el("div", {}, tierLines(t).map(function(x, i){
+        return el("div", { class: i === 0 ? "" : "mini", text: x });
+      }));
+    }
+
     var dupKids = [];
     if (!r.duplicates.length) dupKids.push(el("div", { class:"note", text:"重複はありません。" }));
     r.duplicates.forEach(function(d){
@@ -1057,17 +1086,50 @@ function renderAdmin(){
         await guard(call("setAdopt", ADMIN_PASS, d.no, sel.value));
         load();
       });
+
+      /* 段ごとの比較表 */
+      var head = ["段"].concat(d.entries.map(function(e){
+        return e.who + (e.id === d.adopted ? "（採用）" : "");
+      }));
+      var rows = [];
+      for (var n = 1; n <= d.tiers; n++){
+        (function(n){
+          var differs = d.diff.indexOf(n) >= 0;
+          var cells = [ el("div", {}, [
+            el("div", { class:"no", text: n + "段目" }),
+            differs ? el("span", { class:"pill part", text:"相違" }) : null
+          ]) ];
+          d.entries.forEach(function(e){ cells.push(tierCell(e.tiers[n-1])); });
+          rows.push({ cells: cells, differs: differs });
+        })(n);
+      }
+
+      var table = el("table", {});
+      table.appendChild(el("tr", {}, head.map(function(h){ return el("th", { text:h }); })));
+      rows.forEach(function(r2){
+        table.appendChild(el("tr", { class: r2.differs ? "rowdiff" : "" },
+          r2.cells.map(function(c){ return el("td", {}, [c]); })));
+      });
+
+      var body = el("div", { class:"cmp hide" }, [ table ]);
+      var toggle = el("button", { class:"ghost", text:"内容を見る", onclick: function(){
+        var open = body.classList.toggle("hide");
+        toggle.textContent = open ? "内容を見る" : "内容を閉じる";
+      }});
+
       dupKids.push(el("div", { class:"card" }, [
         el("div", { class:"hd" }, [
-          el("span", { text: d.no }),
+          el("span", { text: d.no + "　" + (d.spec || "") }),
           el("span", { class: "pill " + (d.identical ? "done" : "part"),
-            text: d.identical ? "内容は一致" : "内容が違う" })
+            text: d.identical ? "内容は一致" : d.diff.length + "段で相違" })
         ]),
         el("div", { class:"bd" }, [
           el("div", { class:"note", text: d.entries.map(function(e){
             return e.who + "（" + e.state + "・" + e.at + "）"; }).join(" ／ ") }),
           d.identical ? null : el("div", { class:"warn", text:
-            "回答内容が食い違っています。どちらを採るか確認してください。" }),
+            d.diff.join("・") + "段目の回答が食い違っています。中身を見て、どちらを採るか決めてください。" }),
+          el("div", { class:"row" }, [ toggle ]),
+          body,
           field("採用する回答", sel)
         ])
       ]));
@@ -1084,8 +1146,34 @@ function renderAdmin(){
       el("div", { class:"note", style:"margin-top:14px", text:
         "登録はされたが、段が最後まで埋まっていない収納です。" }),
       r.partialUnits.length
-        ? tbl(["収納番号", "段数", "入力した人"],
-            r.partialUnits.map(function(m){ return [m.no, m.tiers + "段", m.who.join("、")]; }))
+        ? el("div", {}, r.partialUnits.map(function(m){
+            var t2 = el("table", {});
+            t2.appendChild(el("tr", {}, ["段"].concat(m.entries.map(function(e){ return e.who; }))
+              .map(function(h){ return el("th", { text:h }); })));
+            for (var n = 1; n <= m.tiers; n++){
+              var cells = [ el("td", { text: n + "段目" }) ];
+              m.entries.forEach(function(e){ cells.push(el("td", {}, [ tierCell(e.tiers[n-1]) ])); });
+              t2.appendChild(el("tr", {}, cells));
+            }
+            var b2 = el("div", { class:"cmp hide" }, [ t2 ]);
+            var tg = el("button", { class:"ghost", text:"内容を見る", onclick: function(){
+              var open = b2.classList.toggle("hide");
+              tg.textContent = open ? "内容を見る" : "内容を閉じる";
+            }});
+            return el("div", { class:"card" }, [
+              el("div", { class:"hd" }, [
+                el("span", { text: m.no + "　" + (m.spec || "") + "（" + m.tiers + "段）" }),
+                el("span", { class:"pill part",
+                  text: m.entries.map(function(e){ return e.filled.length + "/" + m.tiers; }).join(" ") })
+              ]),
+              el("div", { class:"bd" }, [
+                el("div", { class:"note", text: m.entries.map(function(e){
+                  return e.who + "：" + (e.missing.length ? e.missing.join("・") + "段目が未入力" : "全段あり"); }).join(" ／ ") }),
+                el("div", { class:"row" }, [ tg ]),
+                b2
+              ])
+            ]);
+          }))
         : el("div", { class:"note", text:"ありません。" })
     ]));
 
@@ -1464,14 +1552,37 @@ var MOCK = (function(){
         var ids = hd[u.no];
         if (ids && ids.length > 1){
           var same = JSON.stringify(log[ids[0]][u.no]) === JSON.stringify(log[ids[1]][u.no]);
-          duplicates.push({ no:u.no, identical:same, adopted: adopt[u.no] || ids[0],
-            entries: ids.map(function(sid){ return { id:sid, who:subs[sid].label,
-              state:subs[sid].state, at:"2026/09/01" }; }) });
+          var diff = [];
+          for (var n = 1; n <= u.tiers; n++){
+            if (JSON.stringify(log[ids[0]][u.no][n] || null) !==
+                JSON.stringify(log[ids[1]][u.no][n] || null)) diff.push(n);
+          }
+          duplicates.push({ no:u.no, tiers:u.tiers, spec:u.spec, identical:same, diff:diff,
+            adopted: adopt[u.no] || ids[0],
+            entries: ids.map(function(sid){
+              var tv = [];
+              for (var n = 1; n <= u.tiers; n++) tv.push(log[sid][u.no][n] || null);
+              return { id:sid, who:subs[sid].label, state:subs[sid].state,
+                       at:"2026/09/01", tiers:tv };
+            }) });
         }
         if (!ids || !ids.length){
           var who = [];
           order.forEach(function(sid){ if (log[sid] && log[sid][u.no]) who.push(subs[sid].label); });
-          if (who.length) partialUnits.push({ no:u.no, tiers:u.tiers, who:who });
+          if (who.length){
+            var ents = [];
+            order.forEach(function(sid){
+              if (!log[sid] || !log[sid][u.no]) return;
+              var f = [], ms = [], tv = [];
+              for (var n = 1; n <= u.tiers; n++){
+                var x = log[sid][u.no][n] || null;
+                tv.push(x);
+                (x && x.presence) ? f.push(n) : ms.push(n);
+              }
+              ents.push({ id:sid, who:subs[sid].label, filled:f, missing:ms, tiers:tv });
+            });
+            partialUnits.push({ no:u.no, tiers:u.tiers, spec:u.spec, who:who, entries:ents });
+          }
           else missing.push({ no:u.no, tiers:u.tiers, spec:u.spec });
         } else {
           var sid2 = adopt[u.no] || ids[0], t = log[sid2][u.no], ns = [];
